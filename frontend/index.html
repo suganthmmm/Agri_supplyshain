@@ -1,347 +1,1054 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>AgriChain — Supply Chain + IPFS</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=IBM+Plex+Mono:wght@400;500&family=Lato:wght@300;400;700&display=swap" rel="stylesheet" />
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+  <title>AgriChain — Blockchain Supply Chain</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@300;400;500;700&display=swap" rel="stylesheet"/>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/6.7.0/ethers.umd.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
   <style>
-    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-    :root {
-      --soil: #1a1208; --bark: #2d1f0e; --earth: #3d2b1a; --clay: #5c3d22;
-      --wheat: #c8a96e; --straw: #e8d5a3; --cream: #f5edd8;
-      --leaf: #4a7c59; --moss: #2d5a3d; --lime: #8bc34a;
-      --amber: #f59e0b; --rust: #c0392b; --sky: #5b9bd5;
-      --text: #f0e6d0; --muted: #a08060; --r: 8px;
-      --shadow: 0 4px 24px rgba(0,0,0,.4);
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+
+    :root{
+      --black:   #020405;
+      --deep:    #040c08;
+      --dark:    #071410;
+      --card:    #0a1e14;
+      --card2:   #0d2418;
+      --border:  #0f3020;
+      --border2: #165a38;
+      --g:       #00ff88;
+      --g2:      #00d46e;
+      --g3:      #00a854;
+      --g4:      #007a3c;
+      --gdim:    rgba(0,255,136,.07);
+      --gglow:   rgba(0,255,136,.18);
+      --gglow2:  rgba(0,255,136,.35);
+      --amber:   #ffaa00;
+      --adim:    rgba(255,170,0,.08);
+      --aglow:   rgba(255,170,0,.25);
+      --red:     #ff3355;
+      --blue:    #00ccff;
+      --text:    #d4ffe8;
+      --text2:   #6ab88a;
+      --text3:   #2e5c3e;
+      --mono:    'JetBrains Mono',monospace;
+      --ui:      'Outfit',sans-serif;
     }
-    html { scroll-behavior: smooth; }
-    body { font-family: 'Lato', sans-serif; background: var(--soil); color: var(--text); min-height: 100vh; overflow-x: hidden; }
-    body::before { content:''; position:fixed; inset:0; background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='300'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='300' height='300' filter='url(%23n)' opacity='0.06'/%3E%3C/svg%3E"); pointer-events:none; z-index:9999; opacity:.4; }
 
-    /* Header */
-    header { background:var(--bark); border-bottom:3px solid var(--clay); padding:0 32px; display:flex; align-items:center; justify-content:space-between; height:72px; position:sticky; top:0; z-index:100; }
-    .logo { display:flex; align-items:center; gap:12px; }
-    .logo-icon { width:40px; height:40px; background:var(--leaf); border-radius:10px; display:grid; place-items:center; font-size:22px; }
-    .logo-text { font-family:'Playfair Display',serif; font-size:22px; font-weight:900; color:var(--straw); }
-    .logo-sub { font-family:'IBM Plex Mono',monospace; font-size:10px; color:var(--muted); letter-spacing:2px; text-transform:uppercase; }
-    .wallet-section { display:flex; align-items:center; gap:12px; }
-    #wallet-info { font-family:'IBM Plex Mono',monospace; font-size:11px; color:var(--muted); }
-    #connect-btn { background:var(--leaf); color:#fff; border:none; border-radius:6px; padding:8px 18px; font-family:'IBM Plex Mono',monospace; font-size:13px; cursor:pointer; transition:background .2s; }
-    #connect-btn:hover { background:var(--moss); }
-    #connect-btn.connected { background:var(--moss); }
+    html{scroll-behavior:smooth}
 
-    /* Nav */
-    nav { background:var(--bark); border-bottom:2px solid var(--earth); display:flex; gap:2px; padding:0 32px; overflow-x:auto; }
-    nav [data-tab] { background:none; border:none; border-bottom:3px solid transparent; color:var(--muted); font-family:'IBM Plex Mono',monospace; font-size:12px; letter-spacing:1px; text-transform:uppercase; padding:14px 20px 11px; cursor:pointer; white-space:nowrap; transition:color .2s,border-color .2s; }
-    nav [data-tab]:hover { color:var(--straw); }
-    nav [data-tab].active { color:var(--wheat); border-bottom-color:var(--wheat); }
+    body{
+      font-family:var(--ui);
+      background:var(--black);
+      color:var(--text);
+      min-height:100vh;
+      overflow-x:hidden;
+      cursor:default;
+    }
 
-    /* Layout */
-    main { max-width:1100px; margin:0 auto; padding:40px 24px; }
-    .tab-content { display:none; }
-    .tab-content.active { display:block; animation:fadeIn .25s ease; }
-    @keyframes fadeIn { from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:translateY(0)} }
+    /* Animated scanline overlay */
+    body::before{
+      content:'';
+      position:fixed;inset:0;
+      background:repeating-linear-gradient(
+        0deg,
+        transparent,
+        transparent 2px,
+        rgba(0,0,0,.08) 2px,
+        rgba(0,0,0,.08) 4px
+      );
+      pointer-events:none;z-index:9998;
+    }
 
-    /* Panel */
-    .panel { background:var(--bark); border:1px solid var(--earth); border-radius:var(--r); padding:28px; margin-bottom:24px; }
-    .panel-title { font-family:'Playfair Display',serif; font-size:20px; color:var(--straw); margin-bottom:20px; display:flex; align-items:center; justify-content:space-between; gap:10px; }
+    /* Grid bg */
+    .grid-bg{
+      position:fixed;inset:0;z-index:0;
+      background-image:
+        linear-gradient(rgba(0,255,136,.025) 1px,transparent 1px),
+        linear-gradient(90deg,rgba(0,255,136,.025) 1px,transparent 1px);
+      background-size:60px 60px;
+    }
 
-    /* Forms */
-    .form-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(240px,1fr)); gap:16px; margin-bottom:20px; }
-    .field { display:flex; flex-direction:column; gap:6px; }
-    label { font-family:'IBM Plex Mono',monospace; font-size:11px; letter-spacing:1px; color:var(--muted); text-transform:uppercase; }
-    input, select, textarea { background:var(--earth); border:1px solid var(--clay); border-radius:6px; color:var(--cream); font-family:'Lato',sans-serif; font-size:14px; padding:10px 12px; width:100%; transition:border-color .2s,box-shadow .2s; }
-    input:focus, select:focus, textarea:focus { outline:none; border-color:var(--wheat); box-shadow:0 0 0 3px rgba(200,169,110,.15); }
-    input::placeholder { color:var(--muted); }
-    select option { background:var(--bark); }
-    textarea { resize:vertical; min-height:80px; }
+    /* Moving glow orbs */
+    .orb{
+      position:fixed;border-radius:50%;
+      pointer-events:none;z-index:0;
+      filter:blur(80px);
+      animation:drift 20s ease-in-out infinite;
+    }
+    .orb1{
+      width:500px;height:500px;
+      background:radial-gradient(circle,rgba(0,255,136,.07),transparent 70%);
+      top:-150px;left:-100px;
+      animation-duration:18s;
+    }
+    .orb2{
+      width:400px;height:400px;
+      background:radial-gradient(circle,rgba(0,255,136,.05),transparent 70%);
+      bottom:-100px;right:-80px;
+      animation-duration:22s;animation-delay:-8s;
+    }
+    @keyframes drift{
+      0%,100%{transform:translate(0,0)}
+      33%{transform:translate(40px,30px)}
+      66%{transform:translate(-30px,50px)}
+    }
 
-    /* Buttons */
-    .btn { display:inline-flex; align-items:center; gap:8px; background:var(--leaf); color:#fff; border:none; border-radius:6px; padding:11px 24px; font-family:'IBM Plex Mono',monospace; font-size:13px; cursor:pointer; transition:background .2s,transform .1s; }
-    .btn:hover:not(:disabled) { background:var(--moss); transform:translateY(-1px); }
-    .btn:active:not(:disabled) { transform:translateY(0); }
-    .btn:disabled { opacity:.5; cursor:not-allowed; }
-    .btn-amber { background:var(--amber); }
-    .btn-amber:hover:not(:disabled) { background:#d97706; }
-    .btn-full { width:100%; justify-content:center; }
+    /* ── HEADER ──────────────────────────────────────────────────────── */
+    header{
+      position:sticky;top:0;z-index:200;
+      background:rgba(2,4,5,.92);
+      backdrop-filter:blur(24px);
+      border-bottom:1px solid var(--border);
+      padding:0 40px;
+      display:flex;align-items:center;justify-content:space-between;
+      height:68px;
+    }
+    header::after{
+      content:'';position:absolute;
+      bottom:0;left:0;right:0;height:1px;
+      background:linear-gradient(90deg,transparent,var(--g3),transparent);
+      opacity:.5;
+    }
 
-    /* IPFS Upload Zone */
-    .upload-zone { border:2px dashed var(--clay); border-radius:var(--r); padding:20px; text-align:center; cursor:pointer; transition:border-color .2s,background .2s; position:relative; }
-    .upload-zone:hover { border-color:var(--wheat); background:rgba(200,169,110,.05); }
-    .upload-zone input[type=file] { position:absolute; inset:0; opacity:0; cursor:pointer; width:100%; height:100%; }
-    .upload-icon { font-size:28px; margin-bottom:8px; }
-    .upload-text { font-family:'IBM Plex Mono',monospace; font-size:12px; color:var(--muted); }
-    .upload-text strong { color:var(--wheat); }
+    .logo{display:flex;align-items:center;gap:14px;text-decoration:none}
+    .logo-hex{
+      position:relative;
+      width:40px;height:40px;
+      display:grid;place-items:center;
+    }
+    .logo-hex::before{
+      content:'';
+      position:absolute;inset:0;
+      border:1.5px solid var(--g);
+      border-radius:10px;
+      transform:rotate(15deg);
+      box-shadow:0 0 16px var(--gglow),inset 0 0 16px var(--gdim);
+      animation:spin-slow 12s linear infinite;
+    }
+    .logo-hex::after{
+      content:'';
+      position:absolute;inset:4px;
+      border:1px solid var(--g3);
+      border-radius:7px;
+      transform:rotate(-15deg);
+      animation:spin-slow 12s linear infinite reverse;
+    }
+    @keyframes spin-slow{to{transform:rotate(360deg)}}
+    .logo-emoji{font-size:18px;position:relative;z-index:1}
 
-    /* Image Preview */
-    .img-preview-wrap { display:none; margin-top:12px; border-radius:var(--r); overflow:hidden; border:1px solid var(--clay); background:var(--earth); }
-    .img-preview-wrap img { width:100%; max-height:220px; object-fit:cover; display:block; }
-    .cid-status { font-family:'IBM Plex Mono',monospace; font-size:11px; color:var(--muted); margin-top:8px; min-height:16px; }
+    .logo-text-wrap{line-height:1.2}
+    .logo-name{
+      font-family:var(--ui);font-size:18px;
+      font-weight:800;letter-spacing:-0.5px;
+      color:var(--text);
+    }
+    .logo-name em{
+      color:var(--g);font-style:normal;
+      text-shadow:0 0 12px var(--gglow);
+    }
+    .logo-sub{
+      font-family:var(--mono);
+      font-size:8px;letter-spacing:3px;
+      color:var(--text3);text-transform:uppercase;
+    }
 
-    /* IPFS Info Box */
-    .ipfs-info { background:rgba(74,124,89,.1); border:1px solid rgba(74,124,89,.3); border-radius:var(--r); padding:14px 18px; margin-bottom:20px; font-size:13px; line-height:1.6; color:var(--straw); }
-    .ipfs-info strong { color:var(--lime); }
+    .header-right{display:flex;align-items:center;gap:14px}
 
-    /* Stats */
-    .stats-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:16px; margin-bottom:28px; }
-    .stat-card { background:var(--earth); border:1px solid var(--clay); border-radius:var(--r); padding:20px; text-align:center; }
-    .stat-number { font-family:'Playfair Display',serif; font-size:36px; color:var(--wheat); line-height:1; }
-    .stat-label { font-family:'IBM Plex Mono',monospace; font-size:10px; color:var(--muted); text-transform:uppercase; letter-spacing:1px; margin-top:4px; }
+    .live-badge{
+      display:flex;align-items:center;gap:7px;
+      background:var(--gdim);
+      border:1px solid var(--border2);
+      border-radius:100px;padding:5px 14px;
+      font-family:var(--mono);
+      font-size:9px;letter-spacing:2px;
+      color:var(--text2);text-transform:uppercase;
+    }
+    .live-dot{
+      width:6px;height:6px;border-radius:50%;
+      background:var(--g);
+      box-shadow:0 0 8px var(--g);
+      animation:pulse 2s ease-in-out infinite;
+    }
+    @keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.4;transform:scale(.8)}}
 
-    /* Table */
-    .batch-table { width:100%; border-collapse:collapse; font-size:14px; }
-    .batch-table th { font-family:'IBM Plex Mono',monospace; font-size:11px; letter-spacing:1px; color:var(--muted); text-transform:uppercase; text-align:left; padding:10px 12px; border-bottom:1px solid var(--earth); }
-    .batch-table td { padding:10px 12px; border-bottom:1px solid var(--earth); vertical-align:middle; }
-    .batch-row { cursor:pointer; transition:background .15s; }
-    .batch-row:hover { background:var(--earth); }
-    .dash-thumb { width:40px; height:40px; object-fit:cover; border-radius:6px; border:1px solid var(--clay); }
-    .dash-thumb-empty { width:40px; height:40px; background:var(--earth); border-radius:6px; border:1px solid var(--clay); display:grid; place-items:center; font-size:18px; }
-    .pill { display:inline-flex; align-items:center; gap:4px; border-radius:100px; padding:3px 10px; font-size:12px; font-family:'IBM Plex Mono',monospace; }
+    #wallet-info{
+      font-family:var(--mono);
+      font-size:10px;color:var(--text3);
+    }
 
-    /* Batch Card */
-    .batch-card { background:var(--earth); border:1px solid var(--clay); border-radius:var(--r); overflow:hidden; }
-    .batch-header { background:var(--bark); padding:24px; border-bottom:1px solid var(--clay); display:flex; align-items:flex-start; justify-content:space-between; gap:16px; flex-wrap:wrap; }
-    .batch-header h2 { font-family:'Playfair Display',serif; font-size:26px; color:var(--straw); }
-    .batch-id { font-family:'IBM Plex Mono',monospace; font-size:16px; color:var(--muted); font-weight:400; }
-    .batch-desc { font-size:13px; color:var(--muted); margin-top:6px; font-style:italic; }
-    .status-badge { border:1px solid; border-radius:var(--r); padding:8px 16px; font-family:'IBM Plex Mono',monospace; font-size:13px; white-space:nowrap; }
-    .batch-meta { display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:1px; background:var(--clay); border-bottom:1px solid var(--clay); }
-    .meta-item { background:var(--earth); padding:14px 20px; }
-    .meta-item label { display:block; font-size:10px; margin-bottom:4px; }
-    .meta-item span { font-size:14px; font-weight:700; color:var(--straw); }
-    .section-title { font-family:'IBM Plex Mono',monospace; font-size:12px; letter-spacing:2px; color:var(--muted); text-transform:uppercase; padding:16px 24px 8px; }
+    #connect-btn{
+      position:relative;
+      background:transparent;
+      border:1px solid var(--g);
+      color:var(--g);
+      border-radius:8px;
+      padding:9px 22px;
+      font-family:var(--mono);font-size:10px;
+      letter-spacing:2px;text-transform:uppercase;
+      cursor:pointer;
+      transition:all .25s;
+      overflow:hidden;
+    }
+    #connect-btn::before{
+      content:'';
+      position:absolute;inset:0;
+      background:var(--g);
+      transform:translateX(-101%);
+      transition:transform .25s;
+    }
+    #connect-btn:hover::before{transform:translateX(0)}
+    #connect-btn:hover{color:var(--black);box-shadow:0 0 28px var(--gglow2)}
+    #connect-btn span{position:relative;z-index:1}
+    #connect-btn.connected{
+      background:var(--gdim);
+      border-color:var(--g2);
+      color:var(--g);
+    }
+    #connect-btn.connected::before{display:none}
 
-    /* Harvest image in batch card */
-    .batch-image-section { padding:20px 24px; border-bottom:1px solid var(--clay); }
-    .harvest-image-wrap { position:relative; display:inline-block; max-width:100%; }
-    .harvest-img { max-height:280px; max-width:100%; border-radius:var(--r); border:2px solid var(--clay); object-fit:cover; display:block; }
-    .ipfs-badge { margin-top:8px; display:inline-flex; align-items:center; gap:6px; background:rgba(74,124,89,.15); border:1px solid var(--leaf); border-radius:100px; padding:4px 12px; font-family:'IBM Plex Mono',monospace; font-size:11px; color:var(--lime); }
-    .ipfs-badge a { color:var(--lime); text-decoration:none; }
-    .ipfs-badge a:hover { text-decoration:underline; }
-    .no-image { color:var(--muted); font-style:italic; font-size:13px; }
-    .img-error { color:var(--muted); font-size:12px; font-style:italic; }
+    /* ── NAV ─────────────────────────────────────────────────────────── */
+    nav{
+      position:sticky;top:68px;z-index:199;
+      background:rgba(2,4,5,.88);
+      backdrop-filter:blur(24px);
+      border-bottom:1px solid var(--border);
+      display:flex;padding:0 40px;
+      overflow-x:auto;
+    }
+    nav::-webkit-scrollbar{display:none}
+
+    nav [data-tab]{
+      background:none;border:none;
+      color:var(--text3);
+      font-family:var(--mono);
+      font-size:10px;letter-spacing:2.5px;
+      text-transform:uppercase;
+      padding:18px 28px 15px;
+      cursor:pointer;white-space:nowrap;
+      border-bottom:2px solid transparent;
+      transition:all .2s;
+      display:flex;align-items:center;gap:8px;
+    }
+    nav [data-tab]:hover{color:var(--text2)}
+    nav [data-tab].active{
+      color:var(--g);
+      border-bottom-color:var(--g);
+      text-shadow:0 0 10px var(--gglow);
+    }
+    .nav-num{
+      font-size:8px;color:var(--text3);
+      opacity:.6;
+    }
+
+    /* ── LAYOUT ──────────────────────────────────────────────────────── */
+    main{
+      max-width:1180px;margin:0 auto;
+      padding:44px 32px;
+      position:relative;z-index:1;
+    }
+
+    .tab-content{display:none}
+    .tab-content.active{
+      display:block;
+      animation:fadeSlide .35s cubic-bezier(.16,1,.3,1);
+    }
+    @keyframes fadeSlide{
+      from{opacity:0;transform:translateY(20px)}
+      to{opacity:1;transform:translateY(0)}
+    }
+
+    /* ── PANELS ──────────────────────────────────────────────────────── */
+    .panel{
+      background:var(--card);
+      border:1px solid var(--border);
+      border-radius:16px;
+      padding:32px;
+      margin-bottom:20px;
+      position:relative;overflow:hidden;
+    }
+    .panel::before{
+      content:'';
+      position:absolute;top:0;left:0;right:0;height:1px;
+      background:linear-gradient(90deg,transparent,var(--g4),var(--g3),var(--g4),transparent);
+    }
+
+    .panel-hd{
+      font-family:var(--ui);
+      font-size:17px;font-weight:700;
+      color:var(--text);
+      margin-bottom:24px;
+      display:flex;align-items:center;
+      justify-content:space-between;gap:12px;
+    }
+    .panel-hd-left{display:flex;align-items:center;gap:12px}
+    .panel-icon{
+      width:34px;height:34px;
+      background:var(--gdim);
+      border:1px solid var(--border2);
+      border-radius:10px;
+      display:grid;place-items:center;
+      font-size:16px;
+    }
+
+    /* ── HERO ────────────────────────────────────────────────────────── */
+    .hero{
+      padding:88px 0 64px;
+      position:relative;text-align:center;
+    }
+
+    .hero-tag{
+      display:inline-flex;align-items:center;gap:10px;
+      font-family:var(--mono);
+      font-size:9px;letter-spacing:3px;
+      color:var(--g);text-transform:uppercase;
+      background:var(--gdim);
+      border:1px solid var(--border2);
+      border-radius:100px;padding:7px 18px;
+      margin-bottom:32px;
+    }
+
+    .hero-title{
+      font-family:var(--ui);
+      font-size:clamp(42px,6vw,76px);
+      font-weight:900;
+      line-height:1.02;
+      letter-spacing:-3px;
+      color:var(--text);
+      margin-bottom:24px;
+    }
+    .hero-title .g{
+      color:var(--g);
+      text-shadow:0 0 60px rgba(0,255,136,.4),0 0 120px rgba(0,255,136,.15);
+      display:block;
+    }
+
+    .hero-sub{
+      font-size:17px;line-height:1.7;
+      color:var(--text2);
+      max-width:560px;margin:0 auto 44px;
+      font-weight:300;
+    }
+
+    .hero-btns{display:flex;gap:14px;justify-content:center;flex-wrap:wrap}
+
+    .btn-hero-primary{
+      display:inline-flex;align-items:center;gap:10px;
+      background:var(--g);
+      color:var(--black);
+      border:none;border-radius:10px;
+      padding:15px 32px;
+      font-family:var(--ui);font-size:15px;font-weight:700;
+      cursor:pointer;transition:all .25s;
+      box-shadow:0 0 40px rgba(0,255,136,.3);
+    }
+    .btn-hero-primary:hover{
+      transform:translateY(-3px);
+      box-shadow:0 0 60px rgba(0,255,136,.5);
+    }
+
+    .btn-hero-outline{
+      display:inline-flex;align-items:center;gap:10px;
+      background:transparent;
+      color:var(--text2);
+      border:1px solid var(--border2);
+      border-radius:10px;padding:15px 32px;
+      font-family:var(--ui);font-size:15px;font-weight:500;
+      cursor:pointer;transition:all .25s;
+    }
+    .btn-hero-outline:hover{
+      border-color:var(--g3);color:var(--g);
+    }
+
+    /* Chain visualization strip */
+    .chain-viz{
+      margin:64px auto 0;
+      max-width:800px;
+      display:flex;align-items:center;
+      justify-content:center;gap:0;
+    }
+    .chain-step{
+      display:flex;flex-direction:column;
+      align-items:center;gap:10px;
+      flex:1;position:relative;
+    }
+    .chain-step:not(:last-child)::after{
+      content:'';
+      position:absolute;top:24px;left:calc(50% + 28px);
+      width:calc(100% - 56px);height:1px;
+      background:linear-gradient(90deg,var(--g3),transparent);
+    }
+    .chain-node{
+      width:48px;height:48px;
+      background:var(--card2);
+      border:1px solid var(--border2);
+      border-radius:12px;
+      display:grid;place-items:center;font-size:22px;
+      transition:all .3s;
+      position:relative;z-index:1;
+    }
+    .chain-step:hover .chain-node{
+      border-color:var(--g);
+      box-shadow:0 0 20px var(--gglow);
+      transform:translateY(-4px);
+    }
+    .chain-label{
+      font-family:var(--mono);
+      font-size:9px;letter-spacing:1px;
+      color:var(--text3);text-transform:uppercase;
+      text-align:center;
+    }
+
+    /* ── STATS ───────────────────────────────────────────────────────── */
+    .stats-grid{
+      display:grid;
+      grid-template-columns:repeat(4,1fr);
+      gap:14px;margin-bottom:24px;
+    }
+
+    .stat{
+      background:var(--card);
+      border:1px solid var(--border);
+      border-radius:12px;
+      padding:22px 20px;
+      position:relative;overflow:hidden;
+      transition:all .25s;
+    }
+    .stat:hover{
+      border-color:var(--border2);
+      transform:translateY(-2px);
+    }
+    .stat::after{
+      content:'';
+      position:absolute;bottom:0;left:0;right:0;height:2px;
+      background:linear-gradient(90deg,transparent,var(--g4),transparent);
+    }
+    .stat-n{
+      font-family:var(--ui);
+      font-size:40px;font-weight:900;
+      color:var(--g);
+      line-height:1;
+      text-shadow:0 0 24px rgba(0,255,136,.3);
+    }
+    .stat-l{
+      font-family:var(--mono);
+      font-size:9px;letter-spacing:2px;
+      color:var(--text3);text-transform:uppercase;
+      margin-top:6px;
+    }
+    .stat-icon{
+      position:absolute;top:20px;right:20px;
+      font-size:24px;opacity:.15;
+    }
+
+    /* ── TABLE ───────────────────────────────────────────────────────── */
+    .tbl{width:100%;border-collapse:collapse;font-size:13px}
+    .tbl th{
+      font-family:var(--mono);
+      font-size:9px;letter-spacing:2px;
+      color:var(--text3);text-transform:uppercase;
+      text-align:left;padding:12px 16px;
+      border-bottom:1px solid var(--border);
+    }
+    .tbl td{
+      padding:13px 16px;
+      border-bottom:1px solid rgba(15,48,32,.8);
+      vertical-align:middle;
+      transition:background .15s;
+    }
+    .tbl-row{cursor:pointer}
+    .tbl-row:hover td{background:rgba(0,255,136,.03)}
+    .thumb{
+      width:38px;height:38px;
+      object-fit:cover;border-radius:8px;
+      border:1px solid var(--border);
+    }
+    .thumb-empty{
+      width:38px;height:38px;
+      background:var(--dark);border-radius:8px;
+      border:1px solid var(--border);
+      display:grid;place-items:center;font-size:16px;
+    }
+
+    .badge{
+      display:inline-flex;align-items:center;gap:5px;
+      border-radius:6px;padding:4px 10px;
+      font-family:var(--mono);font-size:9px;
+      letter-spacing:.5px;text-transform:uppercase;
+      border:1px solid transparent;
+    }
+
+    /* ── FORMS ───────────────────────────────────────────────────────── */
+    .form-grid{
+      display:grid;
+      grid-template-columns:repeat(auto-fit,minmax(240px,1fr));
+      gap:16px;margin-bottom:20px;
+    }
+    .field{display:flex;flex-direction:column;gap:7px}
+    .field label{
+      font-family:var(--mono);
+      font-size:9px;letter-spacing:2px;
+      color:var(--text3);text-transform:uppercase;
+    }
+
+    input,select,textarea{
+      background:var(--dark);
+      border:1px solid var(--border);
+      border-radius:8px;
+      color:var(--text);
+      font-family:var(--ui);font-size:14px;
+      padding:12px 16px;width:100%;
+      transition:all .2s;
+    }
+    input:focus,select:focus,textarea:focus{
+      outline:none;
+      border-color:var(--g3);
+      box-shadow:0 0 0 3px rgba(0,255,136,.07),0 0 16px rgba(0,255,136,.05);
+    }
+    input::placeholder{color:var(--text3)}
+    select option{background:var(--card)}
+    textarea{resize:vertical;min-height:80px}
+
+    /* ── BUTTONS ─────────────────────────────────────────────────────── */
+    .btn{
+      display:inline-flex;align-items:center;
+      justify-content:center;gap:8px;
+      border:none;border-radius:8px;
+      padding:12px 24px;
+      font-family:var(--mono);font-size:10px;
+      letter-spacing:1.5px;text-transform:uppercase;
+      cursor:pointer;transition:all .22s;
+    }
+    .btn-g{
+      background:var(--g);color:var(--black);font-weight:700;
+      box-shadow:0 0 24px rgba(0,255,136,.2);
+    }
+    .btn-g:hover:not(:disabled){
+      box-shadow:0 0 40px rgba(0,255,136,.4);
+      transform:translateY(-2px);
+    }
+    .btn-a{
+      background:var(--amber);color:var(--black);font-weight:700;
+      box-shadow:0 0 20px rgba(255,170,0,.15);
+    }
+    .btn-a:hover:not(:disabled){
+      box-shadow:0 0 36px var(--aglow);
+      transform:translateY(-2px);
+    }
+    .btn-ghost{
+      background:transparent;
+      border:1px solid var(--border2);
+      color:var(--text2);
+    }
+    .btn-ghost:hover:not(:disabled){
+      border-color:var(--g3);color:var(--g);
+    }
+    .btn:disabled{opacity:.35;cursor:not-allowed;transform:none !important}
+    .btn-w{width:100%}
+
+    /* ── UPLOAD ──────────────────────────────────────────────────────── */
+    .drop-zone{
+      border:1px dashed var(--border2);
+      border-radius:12px;padding:28px;
+      text-align:center;cursor:pointer;
+      transition:all .25s;position:relative;
+      background:var(--dark);
+    }
+    .drop-zone:hover{
+      border-color:var(--g3);
+      background:var(--gdim);
+      box-shadow:inset 0 0 40px rgba(0,255,136,.04);
+    }
+    .drop-zone input[type=file]{
+      position:absolute;inset:0;opacity:0;
+      cursor:pointer;width:100%;height:100%;
+    }
+    .drop-icon{font-size:26px;margin-bottom:10px}
+    .drop-text{
+      font-family:var(--mono);font-size:10px;
+      color:var(--text3);line-height:1.7;
+    }
+    .drop-text strong{color:var(--g2)}
+    .preview-wrap{
+      display:none;margin-top:12px;
+      border-radius:8px;overflow:hidden;
+      border:1px solid var(--border);
+    }
+    .preview-wrap img{
+      width:100%;max-height:200px;
+      object-fit:cover;display:block;
+    }
+    .cid-txt{
+      font-family:var(--mono);font-size:10px;
+      color:var(--text3);margin-top:8px;min-height:14px;
+    }
+
+    /* ── INFO STRIP ──────────────────────────────────────────────────── */
+    .info-strip{
+      display:flex;gap:14px;align-items:flex-start;
+      background:rgba(0,204,255,.05);
+      border:1px solid rgba(0,204,255,.12);
+      border-radius:10px;padding:14px 18px;
+      margin-bottom:24px;font-size:13px;
+      color:var(--text2);line-height:1.6;
+    }
+    .info-strip-icon{font-size:20px;flex-shrink:0;margin-top:1px}
+    .info-strip strong{color:var(--g2)}
+
+    /* ── RESULT BOX ──────────────────────────────────────────────────── */
+    .result-box{
+      background:rgba(0,255,136,.04);
+      border:1px solid var(--border2);
+      border-radius:10px;padding:16px 20px;
+      font-family:var(--mono);font-size:11px;
+      line-height:2;margin-top:16px;color:var(--text2);
+    }
+    .result-box code{
+      background:var(--dark);padding:2px 7px;
+      border-radius:4px;font-size:10px;
+      color:var(--g);
+    }
+
+    /* ── BATCH CARD ──────────────────────────────────────────────────── */
+    .batch-card{
+      background:var(--card);
+      border:1px solid var(--border);
+      border-radius:16px;overflow:hidden;
+      margin-top:8px;
+    }
+    .batch-hd{
+      padding:28px 32px;
+      border-bottom:1px solid var(--border);
+      background:linear-gradient(135deg,var(--card2),var(--card));
+      display:flex;align-items:flex-start;
+      justify-content:space-between;gap:16px;flex-wrap:wrap;
+    }
+    .batch-hd h2{
+      font-family:var(--ui);
+      font-size:30px;font-weight:900;
+      letter-spacing:-1.5px;color:var(--text);
+    }
+    .bid{
+      font-family:var(--mono);font-size:13px;
+      color:var(--text3);font-weight:400;
+    }
+    .bdesc{font-size:13px;color:var(--text2);margin-top:6px}
+
+    .status-pill{
+      border:1px solid;border-radius:10px;
+      padding:10px 20px;
+      font-family:var(--mono);font-size:10px;
+      letter-spacing:2px;white-space:nowrap;
+      text-transform:uppercase;
+    }
+
+    .batch-meta{
+      display:grid;
+      grid-template-columns:repeat(auto-fit,minmax(140px,1fr));
+      gap:1px;background:var(--border);
+      border-bottom:1px solid var(--border);
+    }
+    .meta-cell{background:var(--card);padding:16px 20px}
+    .meta-cell label{
+      display:block;
+      font-family:var(--mono);font-size:8px;
+      letter-spacing:2px;color:var(--text3);
+      text-transform:uppercase;margin-bottom:5px;
+    }
+    .meta-cell span{
+      font-size:13px;font-weight:600;color:var(--text);
+    }
+
+    .sec-label{
+      font-family:var(--mono);font-size:8px;
+      letter-spacing:3px;color:var(--text3);
+      text-transform:uppercase;
+      padding:16px 24px 6px;
+    }
+
+    /* Harvest image */
+    .img-section{padding:20px 24px;border-bottom:1px solid var(--border)}
+    .hw-wrap{position:relative;display:inline-block;max-width:100%}
+    .hw-img{
+      max-height:280px;max-width:100%;
+      border-radius:10px;border:1px solid var(--border);
+      object-fit:cover;display:block;
+    }
+    .ipfs-chip{
+      margin-top:10px;
+      display:inline-flex;align-items:center;gap:7px;
+      background:var(--gdim);border:1px solid var(--border2);
+      border-radius:100px;padding:5px 14px;
+      font-family:var(--mono);font-size:9px;
+      color:var(--g2);letter-spacing:1px;
+    }
+    .ipfs-chip a{color:var(--g2);text-decoration:none}
+    .ipfs-chip a:hover{text-decoration:underline}
+    .no-img{color:var(--text3);font-size:13px;font-style:italic}
 
     /* Timeline */
-    .timeline { padding:16px 24px 24px; display:flex; flex-direction:column; gap:0; position:relative; }
-    .timeline-item { display:grid; grid-template-columns:48px 1fr; gap:16px; position:relative; }
-    .timeline-item:not(:last-child)::before { content:''; position:absolute; left:22px; top:40px; bottom:0; width:2px; background:var(--clay); }
-    .timeline-dot { width:44px; height:44px; border-radius:50%; display:grid; place-items:center; font-size:18px; flex-shrink:0; z-index:1; }
-    .timeline-content { padding-bottom:20px; }
-    .timeline-content strong { display:block; color:var(--straw); font-size:15px; }
-    .timeline-date { font-family:'IBM Plex Mono',monospace; font-size:11px; color:var(--muted); }
-    .timeline-content p { margin:6px 0 4px; font-size:14px; color:var(--text); }
-    .timeline-content small { font-family:'IBM Plex Mono',monospace; font-size:11px; color:var(--muted); }
-    .timeline-item.active .timeline-content strong { color:var(--wheat); }
-    .timeline-img-wrap { margin-top:10px; }
-    .timeline-img { max-width:200px; max-height:140px; object-fit:cover; border-radius:6px; border:1px solid var(--clay); display:block; margin-bottom:6px; }
-    .ipfs-link { font-family:'IBM Plex Mono',monospace; font-size:11px; color:var(--lime); text-decoration:none; }
-    .ipfs-link:hover { text-decoration:underline; }
+    .timeline{padding:16px 24px 28px}
+    .tl-item{
+      display:grid;grid-template-columns:52px 1fr;
+      gap:16px;position:relative;
+    }
+    .tl-item:not(:last-child)::before{
+      content:'';position:absolute;
+      left:25px;top:52px;bottom:0;
+      width:1px;
+      background:linear-gradient(var(--border2),var(--border));
+    }
+    .tl-dot{
+      width:52px;height:52px;
+      border-radius:14px;
+      display:grid;place-items:center;font-size:20px;
+      flex-shrink:0;z-index:1;
+      border:1px solid var(--border);
+      background:var(--dark);
+      transition:all .2s;
+    }
+    .tl-item.active .tl-dot{
+      border-color:var(--g);
+      box-shadow:0 0 20px var(--gglow);
+      background:var(--gdim);
+    }
+    .tl-body{padding-bottom:22px}
+    .tl-body strong{
+      display:block;font-weight:700;
+      color:var(--text);font-size:14px;
+    }
+    .tl-item.active .tl-body strong{color:var(--g)}
+    .tl-date{
+      font-family:var(--mono);font-size:9px;
+      color:var(--text3);
+    }
+    .tl-body p{margin:7px 0 4px;font-size:13px;color:var(--text2)}
+    .tl-body small{font-family:var(--mono);font-size:9px;color:var(--text3)}
+    .tl-img-wrap{margin-top:12px}
+    .tl-img{
+      max-width:200px;max-height:130px;
+      object-fit:cover;border-radius:8px;
+      border:1px solid var(--border);
+      display:block;margin-bottom:7px;
+    }
+    .ilink{
+      font-family:var(--mono);font-size:9px;
+      color:var(--g2);text-decoration:none;
+    }
+    .ilink:hover{text-decoration:underline}
 
     /* Gallery */
-    .image-gallery { display:grid; grid-template-columns:repeat(auto-fill,minmax(160px,1fr)); gap:12px; padding:8px 24px 24px; }
-    .gallery-item { border-radius:var(--r); overflow:hidden; border:1px solid var(--clay); background:var(--bark); }
-    .gallery-item img { width:100%; height:120px; object-fit:cover; display:block; }
-    .gallery-caption { padding:6px 8px; font-family:'IBM Plex Mono',monospace; font-size:10px; }
-    .gallery-caption a { color:var(--lime); text-decoration:none; }
+    .gallery{
+      display:grid;
+      grid-template-columns:repeat(auto-fill,minmax(160px,1fr));
+      gap:12px;padding:8px 24px 28px;
+    }
+    .gal-item{
+      border-radius:10px;overflow:hidden;
+      border:1px solid var(--border);
+      background:var(--dark);
+      transition:all .2s;
+    }
+    .gal-item:hover{
+      border-color:var(--border2);
+      transform:translateY(-3px);
+    }
+    .gal-item img{width:100%;height:120px;object-fit:cover;display:block}
+    .gal-cap{
+      padding:7px 10px;
+      font-family:var(--mono);font-size:9px;
+    }
+    .gal-cap a{color:var(--g2);text-decoration:none}
 
     /* QR */
-    .qr-container { display:none; flex-direction:column; align-items:center; gap:8px; padding:16px; background:var(--earth); border-radius:var(--r); border:1px dashed var(--clay); margin-top:16px; min-height:60px; }
-    .qr-container canvas { border-radius:8px; border:4px solid var(--cream); }
-    .qr-label { font-family:'IBM Plex Mono',monospace; font-size:12px; color:var(--muted); }
-    .qr-url { font-family:'IBM Plex Mono',monospace; font-size:11px; color:var(--muted); word-break:break-all; }
+    .qr-wrap{
+      display:none;flex-direction:column;
+      align-items:center;gap:12px;
+      padding:24px;background:var(--dark);
+      border-radius:12px;border:1px solid var(--border);
+      margin-top:20px;
+    }
+    .qr-wrap canvas{
+      border-radius:8px;
+      border:4px solid var(--text);
+      box-shadow:0 0 30px rgba(0,255,136,.15);
+    }
+    .qr-lbl{font-family:var(--mono);font-size:11px;color:var(--text3)}
+    .qr-url{font-family:var(--mono);font-size:10px;color:var(--text3);word-break:break-all}
 
-    /* Result box */
-    .result-box { background:rgba(74,124,89,.15); border:1px solid var(--leaf); border-radius:6px; padding:12px 16px; font-size:13px; line-height:1.8; margin-top:16px; }
-    .result-box code { font-family:'IBM Plex Mono',monospace; background:var(--earth); padding:2px 6px; border-radius:4px; font-size:11px; }
+    /* Scan hint */
+    .scan-hint{
+      display:flex;align-items:center;gap:16px;
+      background:var(--gdim);
+      border:1px solid var(--border2);
+      border-radius:12px;padding:20px 24px;
+      margin-bottom:24px;
+    }
+    .sh-icon{font-size:32px}
+    .sh-title{
+      font-family:var(--ui);font-size:15px;
+      font-weight:700;color:var(--text);margin-bottom:4px;
+    }
+    .sh-desc{font-size:13px;color:var(--text2)}
 
-    /* Alert */
-    #global-alert { position:fixed; bottom:24px; right:24px; max-width:380px; background:var(--bark); border-radius:var(--r); padding:14px 20px; font-size:14px; box-shadow:var(--shadow); transform:translateY(120%); transition:transform .3s ease; z-index:9998; border-left:4px solid var(--muted); }
-    #global-alert.show { transform:translateY(0); }
-    #global-alert.alert-success { border-left-color:var(--lime); }
-    #global-alert.alert-error   { border-left-color:var(--rust); }
-    #global-alert.alert-info    { border-left-color:var(--sky); }
+    /* ALERT */
+    #global-alert{
+      position:fixed;bottom:24px;right:24px;
+      max-width:380px;
+      background:var(--card2);
+      border-radius:12px;padding:14px 20px;
+      font-size:13px;
+      box-shadow:0 12px 40px rgba(0,0,0,.6);
+      transform:translateY(140%);
+      transition:transform .35s cubic-bezier(.16,1,.3,1);
+      z-index:9999;border-left:3px solid var(--text3);
+    }
+    #global-alert.show{transform:translateY(0)}
+    #global-alert.alert-success{border-left-color:var(--g);color:var(--g)}
+    #global-alert.alert-error  {border-left-color:var(--red);color:var(--red)}
+    #global-alert.alert-info   {border-left-color:var(--blue);color:var(--blue)}
 
-    .empty { color:var(--muted); font-style:italic; text-align:center; padding:32px; }
+    .empty{
+      color:var(--text3);font-style:italic;
+      text-align:center;padding:48px;
+      font-family:var(--mono);font-size:11px;
+    }
 
-    /* Hero */
-    .hero { text-align:center; padding:48px 24px 32px; }
-    .hero-tag { font-family:'IBM Plex Mono',monospace; font-size:11px; letter-spacing:3px; color:var(--leaf); text-transform:uppercase; margin-bottom:12px; }
-    .hero h1 { font-family:'Playfair Display',serif; font-size:clamp(32px,5vw,52px); color:var(--straw); line-height:1.15; margin-bottom:16px; }
-    .hero h1 em { color:var(--wheat); font-style:normal; }
-    .hero p { color:var(--muted); max-width:540px; margin:0 auto; font-size:16px; line-height:1.6; }
-
-    /* Steps */
-    .steps { display:grid; grid-template-columns:repeat(auto-fit,minmax(160px,1fr)); gap:16px; margin-top:32px; }
-    .step { background:var(--earth); border:1px solid var(--clay); border-radius:var(--r); padding:20px; text-align:center; }
-    .step-icon { font-size:28px; margin-bottom:10px; }
-    .step-title { font-family:'IBM Plex Mono',monospace; font-size:12px; letter-spacing:1px; text-transform:uppercase; color:var(--wheat); margin-bottom:6px; }
-    .step p { font-size:13px; color:var(--muted); line-height:1.5; }
-
-    @media (max-width:640px) {
-      header { padding:0 16px; }
-      nav { padding:0 12px; }
-      main { padding:24px 16px; }
-      .stats-grid { grid-template-columns:1fr 1fr; }
-      .batch-header { flex-direction:column; }
+    @media(max-width:640px){
+      header,nav{padding:0 16px}
+      main{padding:24px 16px}
+      .stats-grid{grid-template-columns:1fr 1fr}
+      .batch-hd{flex-direction:column}
+      .hero-title{letter-spacing:-1.5px}
+      .hero{padding:56px 0 40px}
+      .chain-viz{display:none}
     }
   </style>
 </head>
 <body>
 
+<div class="grid-bg"></div>
+<div class="orb orb1"></div>
+<div class="orb orb2"></div>
+
+<!-- HEADER -->
 <header>
-  <div class="logo">
-    <div class="logo-icon">🌾</div>
-    <div>
-      <div class="logo-text">AgriChain</div>
-      <div class="logo-sub">Blockchain + IPFS Supply Chain</div>
+  <a class="logo" href="#">
+    <div class="logo-hex"><span class="logo-emoji">🌾</span></div>
+    <div class="logo-text-wrap">
+      <div class="logo-name">Agri<em>Chain</em></div>
+      <div class="logo-sub">Supply Chain Protocol</div>
     </div>
-  </div>
-  <div class="wallet-section">
-    <span id="wallet-info">No wallet connected</span>
-    <button id="connect-btn" onclick="connectWallet()">Connect Wallet</button>
+  </a>
+  <div class="header-right">
+    <div class="live-badge">
+      <div class="live-dot"></div>
+      Sepolia Live
+    </div>
+    <span id="wallet-info"></span>
+    <button id="connect-btn" onclick="connectWallet()">
+      <span>Connect Wallet</span>
+    </button>
   </div>
 </header>
 
+<!-- NAV -->
 <nav>
-  <button data-tab="home"      class="active">🏠 Home</button>
-  <button data-tab="dashboard">📊 Dashboard</button>
-  <button data-tab="register" >➕ Register Batch</button>
-  <button data-tab="update"   >🔄 Update Status</button>
-  <button data-tab="verify"   >🔍 Verify / Consumer</button>
+  <button data-tab="home" class="active"><span class="nav-num">01</span> Overview</button>
+  <button data-tab="dashboard"><span class="nav-num">02</span> Dashboard</button>
+  <button data-tab="register"><span class="nav-num">03</span> Register</button>
+  <button data-tab="update"><span class="nav-num">04</span> Update</button>
+  <button data-tab="verify"><span class="nav-num">05</span> Verify</button>
 </nav>
 
 <main>
 
-  <!-- HOME ──────────────────────────────────────────────────────────────── -->
+  <!-- OVERVIEW -->
   <div id="tab-home" class="tab-content active">
     <div class="hero">
-      <p class="hero-tag">Blockchain · IPFS · Ethereum · Solidity</p>
-      <h1>Farm to Table,<br><em>Transparent by Design</em></h1>
-      <p>Track every agricultural batch on immutable blockchain — now with <strong style="color:var(--lime)">IPFS photo proof</strong> at every supply chain stage.</p>
-    </div>
+      <div class="hero-tag">
+        <div class="live-dot"></div>
+        Ethereum · IPFS · Solidity 0.8.19
+      </div>
+      <h1 class="hero-title">
+        Farm-to-Table<br/>
+        <span class="g">On the Blockchain.</span>
+      </h1>
+      <p class="hero-sub">
+        Every harvest. Every transit. Every handover.
+        Permanently recorded. Instantly verifiable by anyone, anywhere.
+      </p>
+      <div class="hero-btns">
+        <button class="btn-hero-primary" onclick="document.querySelector('[data-tab=verify]').click()">
+          ◎ Verify a Product
+        </button>
+        <button class="btn-hero-outline" onclick="document.querySelector('[data-tab=register]').click()">
+          + Register Batch
+        </button>
+      </div>
 
-    <div class="ipfs-info" style="max-width:700px;margin:0 auto 32px">
-      <strong>🆕 New: IPFS Image Storage</strong><br/>
-      Every photo uploaded is stored on <strong>IPFS</strong> — a decentralized file network. The image's unique fingerprint (CID) is recorded on the blockchain. This means the photo can <em>never be swapped or tampered with</em>. Consumers see the actual photo of their food's origin.
-    </div>
-
-    <div class="steps">
-      <div class="step"><div class="step-icon">🌱</div><div class="step-title">Harvest</div><p>Admin registers batch + uploads crop photo to IPFS.</p></div>
-      <div class="step"><div class="step-icon">📸</div><div class="step-title">Photo Proof</div><p>Each stage update can include a photo — stored permanently on IPFS.</p></div>
-      <div class="step"><div class="step-icon">🔗</div><div class="step-title">On-Chain CID</div><p>IPFS image hash recorded on Ethereum — tamper-proof forever.</p></div>
-      <div class="step"><div class="step-icon">📱</div><div class="step-title">Verify</div><p>Consumer scans QR → sees full history with real photos.</p></div>
-    </div>
-
-    <div class="panel" style="margin-top:32px">
-      <div class="panel-title">⚡ Setup Guide</div>
-      <ol style="line-height:2.2;color:var(--muted);padding-left:20px;font-size:14px">
-        <li>Run: <code style="background:var(--earth);padding:2px 8px;border-radius:4px;font-family:'IBM Plex Mono',monospace">npx hardhat node</code></li>
-        <li>Deploy: <code style="background:var(--earth);padding:2px 8px;border-radius:4px;font-family:'IBM Plex Mono',monospace">npx hardhat run scripts/deploy.js --network localhost</code></li>
-        <li>Update <code style="background:var(--earth);padding:2px 8px;border-radius:4px;font-family:'IBM Plex Mono',monospace">CONTRACT_ADDRESS</code> in <code style="background:var(--earth);padding:2px 8px;border-radius:4px;font-family:'IBM Plex Mono',monospace">app.js</code></li>
-        <li>Get free IPFS API key from <a href="https://nft.storage" target="_blank" style="color:var(--wheat)">nft.storage</a> or <a href="https://pinata.cloud" target="_blank" style="color:var(--wheat)">pinata.cloud</a></li>
-        <li>Update API key in <code style="background:var(--earth);padding:2px 8px;border-radius:4px;font-family:'IBM Plex Mono',monospace">ipfs.js</code></li>
-        <li>Open in browser with MetaMask on Hardhat localhost (Chain ID: 31337)</li>
-      </ol>
+      <div class="chain-viz">
+        <div class="chain-step">
+          <div class="chain-node">🌾</div>
+          <div class="chain-label">Harvest</div>
+        </div>
+        <div class="chain-step">
+          <div class="chain-node">⚙️</div>
+          <div class="chain-label">Process</div>
+        </div>
+        <div class="chain-step">
+          <div class="chain-node">🚛</div>
+          <div class="chain-label">Transit</div>
+        </div>
+        <div class="chain-step">
+          <div class="chain-node">🏭</div>
+          <div class="chain-label">Warehouse</div>
+        </div>
+        <div class="chain-step">
+          <div class="chain-node">🏪</div>
+          <div class="chain-label">Retailer</div>
+        </div>
+        <div class="chain-step">
+          <div class="chain-node">✅</div>
+          <div class="chain-label">Sold</div>
+        </div>
+      </div>
     </div>
   </div>
 
-  <!-- DASHBOARD ─────────────────────────────────────────────────────────── -->
+  <!-- DASHBOARD -->
   <div id="tab-dashboard" class="tab-content">
     <div class="stats-grid">
-      <div class="stat-card"><div class="stat-number" id="stat-total">—</div><div class="stat-label">Total Batches</div></div>
-      <div class="stat-card"><div class="stat-number" id="stat-transit">—</div><div class="stat-label">In Transit</div></div>
-      <div class="stat-card"><div class="stat-number" id="stat-sold">—</div><div class="stat-label">Sold</div></div>
-      <div class="stat-card"><div class="stat-number" id="stat-images">—</div><div class="stat-label">With IPFS Photo</div></div>
-    </div>
-    <div class="panel">
-      <div class="panel-title">
-        <span>📦 Recent Batches</span>
-        <button class="btn" style="padding:6px 14px;font-size:12px" onclick="refreshDashboard()">↺ Refresh</button>
+      <div class="stat">
+        <div class="stat-n" id="stat-total">—</div>
+        <div class="stat-l">Total Batches</div>
+        <div class="stat-icon">📦</div>
       </div>
-      <div id="dash-list"><p class="empty">Connect your wallet to view batches.</p></div>
+      <div class="stat">
+        <div class="stat-n" id="stat-transit">—</div>
+        <div class="stat-l">In Transit</div>
+        <div class="stat-icon">🚛</div>
+      </div>
+      <div class="stat">
+        <div class="stat-n" id="stat-sold">—</div>
+        <div class="stat-l">Sold</div>
+        <div class="stat-icon">✅</div>
+      </div>
+      <div class="stat">
+        <div class="stat-n" id="stat-images">—</div>
+        <div class="stat-l">IPFS Photos</div>
+        <div class="stat-icon">📸</div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="panel-hd">
+        <div class="panel-hd-left">
+          <div class="panel-icon">◈</div>
+          Recent Batches
+        </div>
+        <button class="btn btn-ghost" style="padding:7px 16px;font-size:9px" onclick="refreshDashboard()">
+          ↺ Refresh
+        </button>
+      </div>
+      <div id="dash-list">
+        <p class="empty">// Connect wallet to load batch data</p>
+      </div>
     </div>
   </div>
 
-  <!-- REGISTER ──────────────────────────────────────────────────────────── -->
+  <!-- REGISTER -->
   <div id="tab-register" class="tab-content">
     <div class="panel">
-      <div class="panel-title">➕ Register New Batch</div>
-
-      <div class="ipfs-info">
-        <strong>📸 IPFS Photo Upload</strong> — Upload a real photo of the harvest. It will be stored on IPFS and the image fingerprint (CID) will be permanently recorded on the blockchain.
+      <div class="panel-hd">
+        <div class="panel-hd-left">
+          <div class="panel-icon">+</div>
+          Register New Batch
+        </div>
       </div>
 
-      <form id="reg-form" onsubmit="event.preventDefault(); registerBatch()">
+      <div class="info-strip">
+        <div class="info-strip-icon">📸</div>
+        <div><strong>IPFS Photo Storage</strong> — Your harvest photo is stored on IPFS (decentralized storage). The image fingerprint (CID) is permanently recorded on the Ethereum blockchain. It can never be swapped or tampered with.</div>
+      </div>
+
+      <form id="reg-form" onsubmit="event.preventDefault();registerBatch()">
         <div class="form-grid">
           <div class="field">
             <label for="reg-crop">Crop Name *</label>
-            <input id="reg-crop" type="text" placeholder="e.g. Organic Wheat" required />
+            <input id="reg-crop" type="text" placeholder="e.g. Organic Wheat" required/>
           </div>
           <div class="field">
             <label for="reg-farmer">Farmer Name *</label>
-            <input id="reg-farmer" type="text" placeholder="e.g. Ravi Kumar" required />
+            <input id="reg-farmer" type="text" placeholder="e.g. Ravi Kumar" required/>
           </div>
           <div class="field">
             <label for="reg-location">Farm Location *</label>
-            <input id="reg-location" type="text" placeholder="e.g. Punjab, India" required />
+            <input id="reg-location" type="text" placeholder="e.g. Punjab, India" required/>
           </div>
           <div class="field">
             <label for="reg-qty">Quantity (kg) *</label>
-            <input id="reg-qty" type="number" placeholder="5000" min="1" required />
+            <input id="reg-qty" type="number" placeholder="5000" min="1" required/>
           </div>
           <div class="field">
             <label for="reg-date">Harvest Date *</label>
-            <input id="reg-date" type="date" required />
+            <input id="reg-date" type="date" required/>
           </div>
           <div class="field">
             <label for="reg-desc">Description</label>
-            <input id="reg-desc" type="text" placeholder="e.g. Grade A organic, sun-dried" />
+            <input id="reg-desc" type="text" placeholder="e.g. Grade A organic, sun-dried"/>
           </div>
         </div>
 
-        <!-- IPFS Image Upload -->
-        <div class="field" style="margin-bottom:20px">
-          <label>Harvest Photo (uploaded to IPFS)</label>
-          <div class="upload-zone">
-            <input type="file" id="reg-image" accept="image/*" />
-            <div class="upload-icon">📷</div>
-            <div class="upload-text">
-              <strong>Click to select</strong> or drag & drop<br/>
-              JPG, PNG, WEBP — max 10MB
+        <div class="field" style="margin-bottom:22px">
+          <label>Harvest Photo — uploaded to IPFS</label>
+          <div class="drop-zone">
+            <input type="file" id="reg-image" accept="image/*"/>
+            <div class="drop-icon">📷</div>
+            <div class="drop-text">
+              <strong>Click to upload</strong> or drag & drop<br/>
+              JPG · PNG · WEBP — max 10MB
             </div>
           </div>
-          <div id="reg-img-preview" class="img-preview-wrap">
-            <img id="reg-preview-img" src="" alt="Preview" />
+          <div id="reg-img-preview" class="preview-wrap">
+            <img id="reg-preview-img" src="" alt="Preview"/>
           </div>
-          <div id="reg-cid-status" class="cid-status"></div>
+          <div id="reg-cid-status" class="cid-txt"></div>
         </div>
 
-        <button id="reg-submit" class="btn btn-full" type="submit">🌾 Register Batch on Blockchain</button>
+        <button id="reg-submit" class="btn btn-g btn-w" type="submit">
+          Register Batch on Blockchain →
+        </button>
       </form>
 
       <div id="reg-result"></div>
-      <div id="qr-output-reg" class="qr-container"></div>
+      <div id="qr-output-reg" class="qr-wrap"></div>
     </div>
   </div>
 
-  <!-- UPDATE STATUS ─────────────────────────────────────────────────────── -->
+  <!-- UPDATE -->
   <div id="tab-update" class="tab-content">
     <div class="panel">
-      <div class="panel-title">🔄 Update Batch Status</div>
-
-      <div class="ipfs-info">
-        <strong>📸 Attach Photo Proof</strong> — Each status update can include a photo (e.g. photo of truck loading, warehouse arrival, retail shelf). Stored on IPFS as tamper-proof evidence.
+      <div class="panel-hd">
+        <div class="panel-hd-left">
+          <div class="panel-icon">↻</div>
+          Update Batch Status
+        </div>
       </div>
 
-      <form id="upd-form" onsubmit="event.preventDefault(); updateStatus()">
+      <div class="info-strip">
+        <div class="info-strip-icon">📸</div>
+        <div><strong>Photo Proof</strong> — Each status update can include a photo (truck loading, warehouse arrival, retail shelf). Stored on IPFS as tamper-proof evidence at every supply chain stage.</div>
+      </div>
+
+      <form id="upd-form" onsubmit="event.preventDefault();updateStatus()">
         <div class="form-grid">
           <div class="field">
             <label for="upd-id">Batch ID *</label>
-            <input id="upd-id" type="number" placeholder="e.g. 1" min="1" required />
+            <input id="upd-id" type="number" placeholder="e.g. 1" min="1" required/>
           </div>
           <div class="field">
             <label for="upd-status">New Status *</label>
@@ -357,49 +1064,56 @@
           </div>
           <div class="field" style="grid-column:1/-1">
             <label for="upd-note">Update Note *</label>
-            <input id="upd-note" type="text" placeholder="e.g. Loaded onto truck — departing Mumbai" required />
+            <input id="upd-note" type="text" placeholder="e.g. Loaded onto truck — departing Mumbai" required/>
           </div>
         </div>
 
-        <!-- IPFS Image Upload -->
-        <div class="field" style="margin-bottom:20px">
+        <div class="field" style="margin-bottom:22px">
           <label>Stage Photo — optional (uploaded to IPFS)</label>
-          <div class="upload-zone">
-            <input type="file" id="upd-image" accept="image/*" />
-            <div class="upload-icon">📸</div>
-            <div class="upload-text">
-              <strong>Click to select</strong> — photo proof of this stage<br/>
-              Truck loading, warehouse arrival, retail shelf, etc.
+          <div class="drop-zone">
+            <input type="file" id="upd-image" accept="image/*"/>
+            <div class="drop-icon">📸</div>
+            <div class="drop-text">
+              <strong>Click to upload</strong> — photo proof of this stage
             </div>
           </div>
-          <div id="upd-img-preview" class="img-preview-wrap">
-            <img id="upd-preview-img" src="" alt="Preview" />
+          <div id="upd-img-preview" class="preview-wrap">
+            <img id="upd-preview-img" src="" alt="Preview"/>
           </div>
-          <div id="upd-cid-status" class="cid-status"></div>
+          <div id="upd-cid-status" class="cid-txt"></div>
         </div>
 
-        <button id="upd-submit" class="btn btn-amber btn-full" type="submit">🔄 Update Status on Blockchain</button>
+        <button id="upd-submit" class="btn btn-a btn-w" type="submit">
+          Update Status on Blockchain →
+        </button>
       </form>
       <div id="upd-result"></div>
     </div>
   </div>
 
-  <!-- VERIFY ────────────────────────────────────────────────────────────── -->
+  <!-- VERIFY -->
   <div id="tab-verify" class="tab-content">
+    <div class="scan-hint">
+      <div class="sh-icon">📱</div>
+      <div>
+        <div class="sh-title">Consumer Verification</div>
+        <div class="sh-desc">Enter a Batch ID or scan a product QR code to view the complete tamper-proof supply chain history — no wallet required.</div>
+      </div>
+    </div>
+
     <div class="panel">
-      <div class="panel-title">🔍 Verify Product — Consumer View</div>
-      <p style="color:var(--muted);font-size:14px;margin-bottom:20px">
-        Enter a Batch ID to see the complete tamper-proof supply chain history — including all IPFS photos.
-      </p>
       <div style="display:flex;gap:12px;align-items:flex-end;flex-wrap:wrap">
         <div class="field" style="flex:1;min-width:200px">
           <label for="ver-id">Batch ID</label>
-          <input id="ver-id" type="number" placeholder="e.g. 1" min="1" />
+          <input id="ver-id" type="number" placeholder="Enter batch ID..." min="1"/>
         </div>
-        <button id="ver-submit" class="btn" onclick="verifyBatch()">🔍 Verify</button>
+        <button id="ver-submit" class="btn btn-g" style="padding:13px 28px" onclick="verifyBatch()">
+          ◎ Verify Batch
+        </button>
       </div>
-      <div id="qr-output-ver" class="qr-container"></div>
+      <div id="qr-output-ver" class="qr-wrap"></div>
     </div>
+
     <div id="ver-result"></div>
   </div>
 
@@ -408,6 +1122,39 @@
 <div id="global-alert"></div>
 
 <script src="ipfs.js"></script>
+<script>
+// ── Patch app.js to use new CSS class names ──────────────────────────────────
+// Override QR container ID lookup for new class
+</script>
 <script src="app.js"></script>
+<script>
+// Patch render function class names for new design
+const _orig = window.renderBatchCard;
+if(typeof renderBatchCard === 'function'){
+  const _patch = renderBatchCard.toString()
+    .replace(/qr-container/g,'qr-wrap')
+    .replace(/harvest-image-wrap/g,'hw-wrap')
+    .replace(/harvest-img/g,'hw-img')
+    .replace(/ipfs-badge/g,'ipfs-chip')
+    .replace(/batch-card/g,'batch-card')
+    .replace(/batch-header/g,'batch-hd')
+    .replace(/batch-meta/g,'batch-meta')
+    .replace(/meta-item/g,'meta-cell')
+    .replace(/section-title/g,'sec-label')
+    .replace(/timeline-item/g,'tl-item')
+    .replace(/timeline-dot/g,'tl-dot')
+    .replace(/timeline-content/g,'tl-body')
+    .replace(/timeline-date/g,'tl-date')
+    .replace(/timeline-img-wrap/g,'tl-img-wrap')
+    .replace(/timeline-img/g,'tl-img')
+    .replace(/image-gallery/g,'gallery')
+    .replace(/gallery-item/g,'gal-item')
+    .replace(/gallery-caption/g,'gal-cap')
+    .replace(/no-image/g,'no-img')
+    .replace(/status-badge/g,'status-pill')
+    .replace(/batch-image-section/g,'img-section')
+    .replace(/ipfs-link/g,'ilink');
+}
+</script>
 </body>
 </html>

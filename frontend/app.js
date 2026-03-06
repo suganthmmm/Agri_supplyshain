@@ -4,15 +4,15 @@
 
 // ─── CONFIG ───────────────────────────────────────────────────────────────────
 // After deploying to Sepolia, paste your contract address here:
-const CONTRACT_ADDRESS = "0xDC97bEE04370a0eAc49e3f6e8F19586d0238CF43";// update after Sepolia deploy
+const CONTRACT_ADDRESS = "0x5FbDB2315678afecb367f032d93F642f64180aa3"; // update after Sepolia deploy
 
 // Network config — change to "sepolia" after deploying to Sepolia
-const NETWORK_NAME = "sepolia"; // "localhost" or "sepolia"
+const NETWORK_NAME = "localhost"; // "localhost" or "sepolia"
 
 // Public read-only RPC (no wallet needed for reading data)
 const PUBLIC_RPC = {
   localhost: "http://127.0.0.1:8545",
-  sepolia:   "https://ethereum-sepolia-rpc.publicnode.com"
+  sepolia:   "https://rpc.ankr.com/eth_sepolia" // free public Sepolia RPC
 };
 
 const CHAIN_IDS = {
@@ -342,23 +342,23 @@ function renderBatchCard(batch, history, images) {
   const regDate     = new Date(Number(batch.registeredAt) * 1000).toLocaleString();
 
   const harvestImgHTML = batch.harvestImageCID ? `
-    <div class="harvest-image-wrap">
+    <div class="hw-wrap">
       <img src="${cidToUrl(batch.harvestImageCID)}"
            onerror="this.src='';this.parentElement.innerHTML='<p class=img-error>Loading from IPFS...</p>'"
-           alt="Harvest photo" class="harvest-img" />
-      <div class="ipfs-badge">
+           alt="Harvest photo" class="hw-img" />
+      <div class="ipfs-chip">
         📌 IPFS
         <a href="${cidToUrl(batch.harvestImageCID)}" target="_blank">${shortCID(batch.harvestImageCID)}</a>
       </div>
-    </div>` : '<p class="no-image">No harvest photo attached</p>';
+    </div>` : '<p class="no-img">No harvest photo attached</p>';
 
   const galleryHTML = images.length > 0 ? `
-    <h3 class="section-title">🖼️ Photo Gallery (${images.length} images on IPFS)</h3>
-    <div class="image-gallery">
+    <h3 class="sec-label">🖼️ Photo Gallery (${images.length} images on IPFS)</h3>
+    <div class="gallery">
       ${images.map((cid, i) => `
-        <div class="gallery-item">
+        <div class="gal-item">
           <img src="${cidToUrl(cid)}" onerror="this.src=''" alt="Photo ${i+1}" />
-          <div class="gallery-caption"><a href="${cidToUrl(cid)}" target="_blank">📌 ${shortCID(cid)}</a></div>
+          <div class="gal-cap"><a href="${cidToUrl(cid)}" target="_blank">📌 ${shortCID(cid)}</a></div>
         </div>`).join("")}
     </div>` : "";
 
@@ -366,16 +366,16 @@ function renderBatchCard(batch, history, images) {
     const s    = Number(h.status);
     const date = new Date(Number(h.timestamp) * 1000).toLocaleString();
     const imgHTML = h.imageCID ? `
-      <div class="timeline-img-wrap">
-        <img src="${cidToUrl(h.imageCID)}" onerror="this.parentElement.style.display='none'" class="timeline-img" />
-        <a href="${cidToUrl(h.imageCID)}" target="_blank" class="ipfs-link">📌 ${shortCID(h.imageCID)}</a>
+      <div class="tl-img-wrap">
+        <img src="${cidToUrl(h.imageCID)}" onerror="this.parentElement.style.display='none'" class="tl-img" />
+        <a href="${cidToUrl(h.imageCID)}" target="_blank" class="ilink">📌 ${shortCID(h.imageCID)}</a>
       </div>` : "";
     return `
-      <div class="timeline-item ${i === history.length - 1 ? "active" : ""}">
-        <div class="timeline-dot" style="background:${STATUS_COLORS[s]}">${STATUS_ICONS[s]}</div>
-        <div class="timeline-content">
+      <div class="tl-item ${i === history.length - 1 ? "active" : ""}">
+        <div class="tl-dot" style="background:${STATUS_COLORS[s]}">${STATUS_ICONS[s]}</div>
+        <div class="tl-body">
           <strong>${STATUS_LABELS[s]}</strong>
-          <span class="timeline-date">${date}</span>
+          <span class="tl-date">${date}</span>
           <p>${h.note}</p>
           <small>By: ${shortAddr(h.updatedBy)}</small>
           ${imgHTML}
@@ -385,32 +385,32 @@ function renderBatchCard(batch, history, images) {
 
   // Etherscan link for Sepolia
   const explorerHTML = EXPLORERS[NETWORK_NAME]
-    ? `<a href="https://sepolia.etherscan.io/address/${CONTRACT_ADDRESS}" target="_blank" class="ipfs-link" style="padding:0 24px 12px;display:block">🔍 View Contract on Etherscan ↗</a>`
+    ? `<a href="https://sepolia.etherscan.io/address/${CONTRACT_ADDRESS}" target="_blank" class="ilink" style="padding:0 24px 12px;display:block">🔍 View Contract on Etherscan ↗</a>`
     : "";
 
   document.getElementById("ver-result").innerHTML = `
     <div class="batch-card">
-      <div class="batch-header">
+      <div class="batch-hd">
         <div>
           <h2>${batch.cropName} <span class="batch-id">#${batch.batchId}</span></h2>
           <p>Farmer: <strong>${batch.farmerName}</strong> · ${batch.farmerLocation}</p>
           ${batch.description ? `<p class="batch-desc">${batch.description}</p>` : ""}
         </div>
-        <div class="status-badge" style="background:${STATUS_COLORS[status]}20;border-color:${STATUS_COLORS[status]};color:${STATUS_COLORS[status]}">
+        <div class="status-pill" style="background:${STATUS_COLORS[status]}20;border-color:${STATUS_COLORS[status]};color:${STATUS_COLORS[status]}">
           ${STATUS_ICONS[status]} ${STATUS_LABELS[status]}
         </div>
       </div>
-      <div class="batch-image-section">${harvestImgHTML}</div>
+      <div class="img-section">${harvestImgHTML}</div>
       <div class="batch-meta">
-        <div class="meta-item"><label>Quantity</label><span>${Number(batch.quantity).toLocaleString()} kg</span></div>
-        <div class="meta-item"><label>Harvest Date</label><span>${harvestDate}</span></div>
-        <div class="meta-item"><label>Registered On</label><span>${regDate}</span></div>
-        <div class="meta-item"><label>Registered By</label><span>${shortAddr(batch.registeredBy)}</span></div>
-        <div class="meta-item"><label>Photos on IPFS</label><span>${images.length} image${images.length !== 1 ? "s" : ""}</span></div>
-        <div class="meta-item"><label>Network</label><span>${NETWORK_NAME === "sepolia" ? "Sepolia Testnet" : "Local"}</span></div>
+        <div class="meta-cell"><label>Quantity</label><span>${Number(batch.quantity).toLocaleString()} kg</span></div>
+        <div class="meta-cell"><label>Harvest Date</label><span>${harvestDate}</span></div>
+        <div class="meta-cell"><label>Registered On</label><span>${regDate}</span></div>
+        <div class="meta-cell"><label>Registered By</label><span>${shortAddr(batch.registeredBy)}</span></div>
+        <div class="meta-cell"><label>Photos on IPFS</label><span>${images.length} image${images.length !== 1 ? "s" : ""}</span></div>
+        <div class="meta-cell"><label>Network</label><span>${NETWORK_NAME === "sepolia" ? "Sepolia Testnet" : "Local"}</span></div>
       </div>
       ${explorerHTML}
-      <h3 class="section-title">📜 Supply Chain History</h3>
+      <h3 class="sec-label">📜 Supply Chain History</h3>
       <div class="timeline">${timelineHTML}</div>
       ${galleryHTML}
     </div>`;
@@ -453,7 +453,7 @@ async function refreshDashboard() {
           <td>${b.farmerName}</td>
           <td>${Number(b.quantity).toLocaleString()} kg</td>
           <td><span class="pill" style="background:${STATUS_COLORS[s]}20;color:${STATUS_COLORS[s]};border:1px solid ${STATUS_COLORS[s]}">${STATUS_ICONS[s]} ${STATUS_LABELS[s]}</span></td>
-          <td>${b.harvestImageCID ? `<a href="${cidToUrl(b.harvestImageCID)}" target="_blank" class="ipfs-link">📌 IPFS</a>` : "—"}</td>
+          <td>${b.harvestImageCID ? `<a href="${cidToUrl(b.harvestImageCID)}" target="_blank" class="ilink">📌 IPFS</a>` : "—"}</td>
         </tr>`;
     }).join("");
 
