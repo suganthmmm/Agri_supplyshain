@@ -12,7 +12,7 @@ const NETWORK_NAME = "sepolia"; // "localhost" or "sepolia"
 // Public read-only RPC (no wallet needed for reading data)
 const PUBLIC_RPC = {
   localhost: "http://127.0.0.1:8545",
-  sepolia:   "https://rpc.ankr.com/eth_sepolia" // free public Sepolia RPC
+  sepolia:   "https://ethereum-sepolia-rpc.publicnode.com"
 };
 
 const CHAIN_IDS = {
