@@ -1,0 +1,413 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AgriChain — Supply Chain + IPFS</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=IBM+Plex+Mono:wght@400;500&family=Lato:wght@300;400;700&display=swap" rel="stylesheet" />
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/6.7.0/ethers.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --soil: #1a1208; --bark: #2d1f0e; --earth: #3d2b1a; --clay: #5c3d22;
+      --wheat: #c8a96e; --straw: #e8d5a3; --cream: #f5edd8;
+      --leaf: #4a7c59; --moss: #2d5a3d; --lime: #8bc34a;
+      --amber: #f59e0b; --rust: #c0392b; --sky: #5b9bd5;
+      --text: #f0e6d0; --muted: #a08060; --r: 8px;
+      --shadow: 0 4px 24px rgba(0,0,0,.4);
+    }
+    html { scroll-behavior: smooth; }
+    body { font-family: 'Lato', sans-serif; background: var(--soil); color: var(--text); min-height: 100vh; overflow-x: hidden; }
+    body::before { content:''; position:fixed; inset:0; background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='300'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='300' height='300' filter='url(%23n)' opacity='0.06'/%3E%3C/svg%3E"); pointer-events:none; z-index:9999; opacity:.4; }
+
+    /* Header */
+    header { background:var(--bark); border-bottom:3px solid var(--clay); padding:0 32px; display:flex; align-items:center; justify-content:space-between; height:72px; position:sticky; top:0; z-index:100; }
+    .logo { display:flex; align-items:center; gap:12px; }
+    .logo-icon { width:40px; height:40px; background:var(--leaf); border-radius:10px; display:grid; place-items:center; font-size:22px; }
+    .logo-text { font-family:'Playfair Display',serif; font-size:22px; font-weight:900; color:var(--straw); }
+    .logo-sub { font-family:'IBM Plex Mono',monospace; font-size:10px; color:var(--muted); letter-spacing:2px; text-transform:uppercase; }
+    .wallet-section { display:flex; align-items:center; gap:12px; }
+    #wallet-info { font-family:'IBM Plex Mono',monospace; font-size:11px; color:var(--muted); }
+    #connect-btn { background:var(--leaf); color:#fff; border:none; border-radius:6px; padding:8px 18px; font-family:'IBM Plex Mono',monospace; font-size:13px; cursor:pointer; transition:background .2s; }
+    #connect-btn:hover { background:var(--moss); }
+    #connect-btn.connected { background:var(--moss); }
+
+    /* Nav */
+    nav { background:var(--bark); border-bottom:2px solid var(--earth); display:flex; gap:2px; padding:0 32px; overflow-x:auto; }
+    nav [data-tab] { background:none; border:none; border-bottom:3px solid transparent; color:var(--muted); font-family:'IBM Plex Mono',monospace; font-size:12px; letter-spacing:1px; text-transform:uppercase; padding:14px 20px 11px; cursor:pointer; white-space:nowrap; transition:color .2s,border-color .2s; }
+    nav [data-tab]:hover { color:var(--straw); }
+    nav [data-tab].active { color:var(--wheat); border-bottom-color:var(--wheat); }
+
+    /* Layout */
+    main { max-width:1100px; margin:0 auto; padding:40px 24px; }
+    .tab-content { display:none; }
+    .tab-content.active { display:block; animation:fadeIn .25s ease; }
+    @keyframes fadeIn { from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:translateY(0)} }
+
+    /* Panel */
+    .panel { background:var(--bark); border:1px solid var(--earth); border-radius:var(--r); padding:28px; margin-bottom:24px; }
+    .panel-title { font-family:'Playfair Display',serif; font-size:20px; color:var(--straw); margin-bottom:20px; display:flex; align-items:center; justify-content:space-between; gap:10px; }
+
+    /* Forms */
+    .form-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(240px,1fr)); gap:16px; margin-bottom:20px; }
+    .field { display:flex; flex-direction:column; gap:6px; }
+    label { font-family:'IBM Plex Mono',monospace; font-size:11px; letter-spacing:1px; color:var(--muted); text-transform:uppercase; }
+    input, select, textarea { background:var(--earth); border:1px solid var(--clay); border-radius:6px; color:var(--cream); font-family:'Lato',sans-serif; font-size:14px; padding:10px 12px; width:100%; transition:border-color .2s,box-shadow .2s; }
+    input:focus, select:focus, textarea:focus { outline:none; border-color:var(--wheat); box-shadow:0 0 0 3px rgba(200,169,110,.15); }
+    input::placeholder { color:var(--muted); }
+    select option { background:var(--bark); }
+    textarea { resize:vertical; min-height:80px; }
+
+    /* Buttons */
+    .btn { display:inline-flex; align-items:center; gap:8px; background:var(--leaf); color:#fff; border:none; border-radius:6px; padding:11px 24px; font-family:'IBM Plex Mono',monospace; font-size:13px; cursor:pointer; transition:background .2s,transform .1s; }
+    .btn:hover:not(:disabled) { background:var(--moss); transform:translateY(-1px); }
+    .btn:active:not(:disabled) { transform:translateY(0); }
+    .btn:disabled { opacity:.5; cursor:not-allowed; }
+    .btn-amber { background:var(--amber); }
+    .btn-amber:hover:not(:disabled) { background:#d97706; }
+    .btn-full { width:100%; justify-content:center; }
+
+    /* IPFS Upload Zone */
+    .upload-zone { border:2px dashed var(--clay); border-radius:var(--r); padding:20px; text-align:center; cursor:pointer; transition:border-color .2s,background .2s; position:relative; }
+    .upload-zone:hover { border-color:var(--wheat); background:rgba(200,169,110,.05); }
+    .upload-zone input[type=file] { position:absolute; inset:0; opacity:0; cursor:pointer; width:100%; height:100%; }
+    .upload-icon { font-size:28px; margin-bottom:8px; }
+    .upload-text { font-family:'IBM Plex Mono',monospace; font-size:12px; color:var(--muted); }
+    .upload-text strong { color:var(--wheat); }
+
+    /* Image Preview */
+    .img-preview-wrap { display:none; margin-top:12px; border-radius:var(--r); overflow:hidden; border:1px solid var(--clay); background:var(--earth); }
+    .img-preview-wrap img { width:100%; max-height:220px; object-fit:cover; display:block; }
+    .cid-status { font-family:'IBM Plex Mono',monospace; font-size:11px; color:var(--muted); margin-top:8px; min-height:16px; }
+
+    /* IPFS Info Box */
+    .ipfs-info { background:rgba(74,124,89,.1); border:1px solid rgba(74,124,89,.3); border-radius:var(--r); padding:14px 18px; margin-bottom:20px; font-size:13px; line-height:1.6; color:var(--straw); }
+    .ipfs-info strong { color:var(--lime); }
+
+    /* Stats */
+    .stats-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:16px; margin-bottom:28px; }
+    .stat-card { background:var(--earth); border:1px solid var(--clay); border-radius:var(--r); padding:20px; text-align:center; }
+    .stat-number { font-family:'Playfair Display',serif; font-size:36px; color:var(--wheat); line-height:1; }
+    .stat-label { font-family:'IBM Plex Mono',monospace; font-size:10px; color:var(--muted); text-transform:uppercase; letter-spacing:1px; margin-top:4px; }
+
+    /* Table */
+    .batch-table { width:100%; border-collapse:collapse; font-size:14px; }
+    .batch-table th { font-family:'IBM Plex Mono',monospace; font-size:11px; letter-spacing:1px; color:var(--muted); text-transform:uppercase; text-align:left; padding:10px 12px; border-bottom:1px solid var(--earth); }
+    .batch-table td { padding:10px 12px; border-bottom:1px solid var(--earth); vertical-align:middle; }
+    .batch-row { cursor:pointer; transition:background .15s; }
+    .batch-row:hover { background:var(--earth); }
+    .dash-thumb { width:40px; height:40px; object-fit:cover; border-radius:6px; border:1px solid var(--clay); }
+    .dash-thumb-empty { width:40px; height:40px; background:var(--earth); border-radius:6px; border:1px solid var(--clay); display:grid; place-items:center; font-size:18px; }
+    .pill { display:inline-flex; align-items:center; gap:4px; border-radius:100px; padding:3px 10px; font-size:12px; font-family:'IBM Plex Mono',monospace; }
+
+    /* Batch Card */
+    .batch-card { background:var(--earth); border:1px solid var(--clay); border-radius:var(--r); overflow:hidden; }
+    .batch-header { background:var(--bark); padding:24px; border-bottom:1px solid var(--clay); display:flex; align-items:flex-start; justify-content:space-between; gap:16px; flex-wrap:wrap; }
+    .batch-header h2 { font-family:'Playfair Display',serif; font-size:26px; color:var(--straw); }
+    .batch-id { font-family:'IBM Plex Mono',monospace; font-size:16px; color:var(--muted); font-weight:400; }
+    .batch-desc { font-size:13px; color:var(--muted); margin-top:6px; font-style:italic; }
+    .status-badge { border:1px solid; border-radius:var(--r); padding:8px 16px; font-family:'IBM Plex Mono',monospace; font-size:13px; white-space:nowrap; }
+    .batch-meta { display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:1px; background:var(--clay); border-bottom:1px solid var(--clay); }
+    .meta-item { background:var(--earth); padding:14px 20px; }
+    .meta-item label { display:block; font-size:10px; margin-bottom:4px; }
+    .meta-item span { font-size:14px; font-weight:700; color:var(--straw); }
+    .section-title { font-family:'IBM Plex Mono',monospace; font-size:12px; letter-spacing:2px; color:var(--muted); text-transform:uppercase; padding:16px 24px 8px; }
+
+    /* Harvest image in batch card */
+    .batch-image-section { padding:20px 24px; border-bottom:1px solid var(--clay); }
+    .harvest-image-wrap { position:relative; display:inline-block; max-width:100%; }
+    .harvest-img { max-height:280px; max-width:100%; border-radius:var(--r); border:2px solid var(--clay); object-fit:cover; display:block; }
+    .ipfs-badge { margin-top:8px; display:inline-flex; align-items:center; gap:6px; background:rgba(74,124,89,.15); border:1px solid var(--leaf); border-radius:100px; padding:4px 12px; font-family:'IBM Plex Mono',monospace; font-size:11px; color:var(--lime); }
+    .ipfs-badge a { color:var(--lime); text-decoration:none; }
+    .ipfs-badge a:hover { text-decoration:underline; }
+    .no-image { color:var(--muted); font-style:italic; font-size:13px; }
+    .img-error { color:var(--muted); font-size:12px; font-style:italic; }
+
+    /* Timeline */
+    .timeline { padding:16px 24px 24px; display:flex; flex-direction:column; gap:0; position:relative; }
+    .timeline-item { display:grid; grid-template-columns:48px 1fr; gap:16px; position:relative; }
+    .timeline-item:not(:last-child)::before { content:''; position:absolute; left:22px; top:40px; bottom:0; width:2px; background:var(--clay); }
+    .timeline-dot { width:44px; height:44px; border-radius:50%; display:grid; place-items:center; font-size:18px; flex-shrink:0; z-index:1; }
+    .timeline-content { padding-bottom:20px; }
+    .timeline-content strong { display:block; color:var(--straw); font-size:15px; }
+    .timeline-date { font-family:'IBM Plex Mono',monospace; font-size:11px; color:var(--muted); }
+    .timeline-content p { margin:6px 0 4px; font-size:14px; color:var(--text); }
+    .timeline-content small { font-family:'IBM Plex Mono',monospace; font-size:11px; color:var(--muted); }
+    .timeline-item.active .timeline-content strong { color:var(--wheat); }
+    .timeline-img-wrap { margin-top:10px; }
+    .timeline-img { max-width:200px; max-height:140px; object-fit:cover; border-radius:6px; border:1px solid var(--clay); display:block; margin-bottom:6px; }
+    .ipfs-link { font-family:'IBM Plex Mono',monospace; font-size:11px; color:var(--lime); text-decoration:none; }
+    .ipfs-link:hover { text-decoration:underline; }
+
+    /* Gallery */
+    .image-gallery { display:grid; grid-template-columns:repeat(auto-fill,minmax(160px,1fr)); gap:12px; padding:8px 24px 24px; }
+    .gallery-item { border-radius:var(--r); overflow:hidden; border:1px solid var(--clay); background:var(--bark); }
+    .gallery-item img { width:100%; height:120px; object-fit:cover; display:block; }
+    .gallery-caption { padding:6px 8px; font-family:'IBM Plex Mono',monospace; font-size:10px; }
+    .gallery-caption a { color:var(--lime); text-decoration:none; }
+
+    /* QR */
+    .qr-container { display:none; flex-direction:column; align-items:center; gap:8px; padding:16px; background:var(--earth); border-radius:var(--r); border:1px dashed var(--clay); margin-top:16px; min-height:60px; }
+    .qr-container canvas { border-radius:8px; border:4px solid var(--cream); }
+    .qr-label { font-family:'IBM Plex Mono',monospace; font-size:12px; color:var(--muted); }
+    .qr-url { font-family:'IBM Plex Mono',monospace; font-size:11px; color:var(--muted); word-break:break-all; }
+
+    /* Result box */
+    .result-box { background:rgba(74,124,89,.15); border:1px solid var(--leaf); border-radius:6px; padding:12px 16px; font-size:13px; line-height:1.8; margin-top:16px; }
+    .result-box code { font-family:'IBM Plex Mono',monospace; background:var(--earth); padding:2px 6px; border-radius:4px; font-size:11px; }
+
+    /* Alert */
+    #global-alert { position:fixed; bottom:24px; right:24px; max-width:380px; background:var(--bark); border-radius:var(--r); padding:14px 20px; font-size:14px; box-shadow:var(--shadow); transform:translateY(120%); transition:transform .3s ease; z-index:9998; border-left:4px solid var(--muted); }
+    #global-alert.show { transform:translateY(0); }
+    #global-alert.alert-success { border-left-color:var(--lime); }
+    #global-alert.alert-error   { border-left-color:var(--rust); }
+    #global-alert.alert-info    { border-left-color:var(--sky); }
+
+    .empty { color:var(--muted); font-style:italic; text-align:center; padding:32px; }
+
+    /* Hero */
+    .hero { text-align:center; padding:48px 24px 32px; }
+    .hero-tag { font-family:'IBM Plex Mono',monospace; font-size:11px; letter-spacing:3px; color:var(--leaf); text-transform:uppercase; margin-bottom:12px; }
+    .hero h1 { font-family:'Playfair Display',serif; font-size:clamp(32px,5vw,52px); color:var(--straw); line-height:1.15; margin-bottom:16px; }
+    .hero h1 em { color:var(--wheat); font-style:normal; }
+    .hero p { color:var(--muted); max-width:540px; margin:0 auto; font-size:16px; line-height:1.6; }
+
+    /* Steps */
+    .steps { display:grid; grid-template-columns:repeat(auto-fit,minmax(160px,1fr)); gap:16px; margin-top:32px; }
+    .step { background:var(--earth); border:1px solid var(--clay); border-radius:var(--r); padding:20px; text-align:center; }
+    .step-icon { font-size:28px; margin-bottom:10px; }
+    .step-title { font-family:'IBM Plex Mono',monospace; font-size:12px; letter-spacing:1px; text-transform:uppercase; color:var(--wheat); margin-bottom:6px; }
+    .step p { font-size:13px; color:var(--muted); line-height:1.5; }
+
+    @media (max-width:640px) {
+      header { padding:0 16px; }
+      nav { padding:0 12px; }
+      main { padding:24px 16px; }
+      .stats-grid { grid-template-columns:1fr 1fr; }
+      .batch-header { flex-direction:column; }
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="logo">
+    <div class="logo-icon">🌾</div>
+    <div>
+      <div class="logo-text">AgriChain</div>
+      <div class="logo-sub">Blockchain + IPFS Supply Chain</div>
+    </div>
+  </div>
+  <div class="wallet-section">
+    <span id="wallet-info">No wallet connected</span>
+    <button id="connect-btn" onclick="connectWallet()">Connect Wallet</button>
+  </div>
+</header>
+
+<nav>
+  <button data-tab="home"      class="active">🏠 Home</button>
+  <button data-tab="dashboard">📊 Dashboard</button>
+  <button data-tab="register" >➕ Register Batch</button>
+  <button data-tab="update"   >🔄 Update Status</button>
+  <button data-tab="verify"   >🔍 Verify / Consumer</button>
+</nav>
+
+<main>
+
+  <!-- HOME ──────────────────────────────────────────────────────────────── -->
+  <div id="tab-home" class="tab-content active">
+    <div class="hero">
+      <p class="hero-tag">Blockchain · IPFS · Ethereum · Solidity</p>
+      <h1>Farm to Table,<br><em>Transparent by Design</em></h1>
+      <p>Track every agricultural batch on immutable blockchain — now with <strong style="color:var(--lime)">IPFS photo proof</strong> at every supply chain stage.</p>
+    </div>
+
+    <div class="ipfs-info" style="max-width:700px;margin:0 auto 32px">
+      <strong>🆕 New: IPFS Image Storage</strong><br/>
+      Every photo uploaded is stored on <strong>IPFS</strong> — a decentralized file network. The image's unique fingerprint (CID) is recorded on the blockchain. This means the photo can <em>never be swapped or tampered with</em>. Consumers see the actual photo of their food's origin.
+    </div>
+
+    <div class="steps">
+      <div class="step"><div class="step-icon">🌱</div><div class="step-title">Harvest</div><p>Admin registers batch + uploads crop photo to IPFS.</p></div>
+      <div class="step"><div class="step-icon">📸</div><div class="step-title">Photo Proof</div><p>Each stage update can include a photo — stored permanently on IPFS.</p></div>
+      <div class="step"><div class="step-icon">🔗</div><div class="step-title">On-Chain CID</div><p>IPFS image hash recorded on Ethereum — tamper-proof forever.</p></div>
+      <div class="step"><div class="step-icon">📱</div><div class="step-title">Verify</div><p>Consumer scans QR → sees full history with real photos.</p></div>
+    </div>
+
+    <div class="panel" style="margin-top:32px">
+      <div class="panel-title">⚡ Setup Guide</div>
+      <ol style="line-height:2.2;color:var(--muted);padding-left:20px;font-size:14px">
+        <li>Run: <code style="background:var(--earth);padding:2px 8px;border-radius:4px;font-family:'IBM Plex Mono',monospace">npx hardhat node</code></li>
+        <li>Deploy: <code style="background:var(--earth);padding:2px 8px;border-radius:4px;font-family:'IBM Plex Mono',monospace">npx hardhat run scripts/deploy.js --network localhost</code></li>
+        <li>Update <code style="background:var(--earth);padding:2px 8px;border-radius:4px;font-family:'IBM Plex Mono',monospace">CONTRACT_ADDRESS</code> in <code style="background:var(--earth);padding:2px 8px;border-radius:4px;font-family:'IBM Plex Mono',monospace">app.js</code></li>
+        <li>Get free IPFS API key from <a href="https://nft.storage" target="_blank" style="color:var(--wheat)">nft.storage</a> or <a href="https://pinata.cloud" target="_blank" style="color:var(--wheat)">pinata.cloud</a></li>
+        <li>Update API key in <code style="background:var(--earth);padding:2px 8px;border-radius:4px;font-family:'IBM Plex Mono',monospace">ipfs.js</code></li>
+        <li>Open in browser with MetaMask on Hardhat localhost (Chain ID: 31337)</li>
+      </ol>
+    </div>
+  </div>
+
+  <!-- DASHBOARD ─────────────────────────────────────────────────────────── -->
+  <div id="tab-dashboard" class="tab-content">
+    <div class="stats-grid">
+      <div class="stat-card"><div class="stat-number" id="stat-total">—</div><div class="stat-label">Total Batches</div></div>
+      <div class="stat-card"><div class="stat-number" id="stat-transit">—</div><div class="stat-label">In Transit</div></div>
+      <div class="stat-card"><div class="stat-number" id="stat-sold">—</div><div class="stat-label">Sold</div></div>
+      <div class="stat-card"><div class="stat-number" id="stat-images">—</div><div class="stat-label">With IPFS Photo</div></div>
+    </div>
+    <div class="panel">
+      <div class="panel-title">
+        <span>📦 Recent Batches</span>
+        <button class="btn" style="padding:6px 14px;font-size:12px" onclick="refreshDashboard()">↺ Refresh</button>
+      </div>
+      <div id="dash-list"><p class="empty">Connect your wallet to view batches.</p></div>
+    </div>
+  </div>
+
+  <!-- REGISTER ──────────────────────────────────────────────────────────── -->
+  <div id="tab-register" class="tab-content">
+    <div class="panel">
+      <div class="panel-title">➕ Register New Batch</div>
+
+      <div class="ipfs-info">
+        <strong>📸 IPFS Photo Upload</strong> — Upload a real photo of the harvest. It will be stored on IPFS and the image fingerprint (CID) will be permanently recorded on the blockchain.
+      </div>
+
+      <form id="reg-form" onsubmit="event.preventDefault(); registerBatch()">
+        <div class="form-grid">
+          <div class="field">
+            <label for="reg-crop">Crop Name *</label>
+            <input id="reg-crop" type="text" placeholder="e.g. Organic Wheat" required />
+          </div>
+          <div class="field">
+            <label for="reg-farmer">Farmer Name *</label>
+            <input id="reg-farmer" type="text" placeholder="e.g. Ravi Kumar" required />
+          </div>
+          <div class="field">
+            <label for="reg-location">Farm Location *</label>
+            <input id="reg-location" type="text" placeholder="e.g. Punjab, India" required />
+          </div>
+          <div class="field">
+            <label for="reg-qty">Quantity (kg) *</label>
+            <input id="reg-qty" type="number" placeholder="5000" min="1" required />
+          </div>
+          <div class="field">
+            <label for="reg-date">Harvest Date *</label>
+            <input id="reg-date" type="date" required />
+          </div>
+          <div class="field">
+            <label for="reg-desc">Description</label>
+            <input id="reg-desc" type="text" placeholder="e.g. Grade A organic, sun-dried" />
+          </div>
+        </div>
+
+        <!-- IPFS Image Upload -->
+        <div class="field" style="margin-bottom:20px">
+          <label>Harvest Photo (uploaded to IPFS)</label>
+          <div class="upload-zone">
+            <input type="file" id="reg-image" accept="image/*" />
+            <div class="upload-icon">📷</div>
+            <div class="upload-text">
+              <strong>Click to select</strong> or drag & drop<br/>
+              JPG, PNG, WEBP — max 10MB
+            </div>
+          </div>
+          <div id="reg-img-preview" class="img-preview-wrap">
+            <img id="reg-preview-img" src="" alt="Preview" />
+          </div>
+          <div id="reg-cid-status" class="cid-status"></div>
+        </div>
+
+        <button id="reg-submit" class="btn btn-full" type="submit">🌾 Register Batch on Blockchain</button>
+      </form>
+
+      <div id="reg-result"></div>
+      <div id="qr-output-reg" class="qr-container"></div>
+    </div>
+  </div>
+
+  <!-- UPDATE STATUS ─────────────────────────────────────────────────────── -->
+  <div id="tab-update" class="tab-content">
+    <div class="panel">
+      <div class="panel-title">🔄 Update Batch Status</div>
+
+      <div class="ipfs-info">
+        <strong>📸 Attach Photo Proof</strong> — Each status update can include a photo (e.g. photo of truck loading, warehouse arrival, retail shelf). Stored on IPFS as tamper-proof evidence.
+      </div>
+
+      <form id="upd-form" onsubmit="event.preventDefault(); updateStatus()">
+        <div class="form-grid">
+          <div class="field">
+            <label for="upd-id">Batch ID *</label>
+            <input id="upd-id" type="number" placeholder="e.g. 1" min="1" required />
+          </div>
+          <div class="field">
+            <label for="upd-status">New Status *</label>
+            <select id="upd-status" required>
+              <option value="">— Select Status —</option>
+              <option value="0">🌾 Harvested</option>
+              <option value="1">⚙️ Processing</option>
+              <option value="2">🚛 In Transit</option>
+              <option value="3">🏭 In Warehouse</option>
+              <option value="4">🏪 At Retailer</option>
+              <option value="5">✅ Sold</option>
+            </select>
+          </div>
+          <div class="field" style="grid-column:1/-1">
+            <label for="upd-note">Update Note *</label>
+            <input id="upd-note" type="text" placeholder="e.g. Loaded onto truck — departing Mumbai" required />
+          </div>
+        </div>
+
+        <!-- IPFS Image Upload -->
+        <div class="field" style="margin-bottom:20px">
+          <label>Stage Photo — optional (uploaded to IPFS)</label>
+          <div class="upload-zone">
+            <input type="file" id="upd-image" accept="image/*" />
+            <div class="upload-icon">📸</div>
+            <div class="upload-text">
+              <strong>Click to select</strong> — photo proof of this stage<br/>
+              Truck loading, warehouse arrival, retail shelf, etc.
+            </div>
+          </div>
+          <div id="upd-img-preview" class="img-preview-wrap">
+            <img id="upd-preview-img" src="" alt="Preview" />
+          </div>
+          <div id="upd-cid-status" class="cid-status"></div>
+        </div>
+
+        <button id="upd-submit" class="btn btn-amber btn-full" type="submit">🔄 Update Status on Blockchain</button>
+      </form>
+      <div id="upd-result"></div>
+    </div>
+  </div>
+
+  <!-- VERIFY ────────────────────────────────────────────────────────────── -->
+  <div id="tab-verify" class="tab-content">
+    <div class="panel">
+      <div class="panel-title">🔍 Verify Product — Consumer View</div>
+      <p style="color:var(--muted);font-size:14px;margin-bottom:20px">
+        Enter a Batch ID to see the complete tamper-proof supply chain history — including all IPFS photos.
+      </p>
+      <div style="display:flex;gap:12px;align-items:flex-end;flex-wrap:wrap">
+        <div class="field" style="flex:1;min-width:200px">
+          <label for="ver-id">Batch ID</label>
+          <input id="ver-id" type="number" placeholder="e.g. 1" min="1" />
+        </div>
+        <button id="ver-submit" class="btn" onclick="verifyBatch()">🔍 Verify</button>
+      </div>
+      <div id="qr-output-ver" class="qr-container"></div>
+    </div>
+    <div id="ver-result"></div>
+  </div>
+
+</main>
+
+<div id="global-alert"></div>
+
+<script src="ipfs.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
